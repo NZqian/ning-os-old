@@ -4,8 +4,15 @@
 #![test_runner(ning_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+extern crate alloc;
+
 use core::panic::PanicInfo;
+use alloc::boxed::Box;
+use alloc::rc::Rc;
+use alloc::vec;
+use alloc::vec::Vec;
 use bootloader::{BootInfo, entry_point};
+use ning_os::allocator::init_heap;
 use ning_os::hlt_loop;
 use ning_os::memory::BootInfoFrameAllocator;
 use ning_os::println;
@@ -47,9 +54,25 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     unsafe {
         page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e);
     }
+
+    init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+
+    let x = Box::new(41);
+    println!("heap value at {:p}", x);
+
+    let mut vec = Vec::new();
+    for i in 0..500 {
+        vec.push(i);
+    }
+    println!("vec at {:p}", vec.as_slice());
+    let reference_counted = Rc::new(vec![1, 2, 3]);
+    let cloned_reference = reference_counted.clone();
+    println!("current reference count is {}", Rc::strong_count(&cloned_reference));
+    core::mem::drop(reference_counted);
+    println!("current reference count is {}", Rc::strong_count(&cloned_reference));
+
     #[cfg(test)]
     test_main();
-    //loop {}
     hlt_loop();
 }
 
