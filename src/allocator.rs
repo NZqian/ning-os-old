@@ -1,7 +1,8 @@
 use alloc::alloc::{GlobalAlloc, Layout};
 use x86_64::{VirtAddr, structures::paging::{FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB, mapper::MapToError}};
 use core::{result::Result, panic, ptr::null_mut};
-use linked_list_allocator::LockedHeap;
+//use linked_list_allocator::LockedHeap;
+use buddy_system_allocator::LockedHeap;
 
 pub struct Dummy;
 
@@ -15,7 +16,7 @@ unsafe impl GlobalAlloc for Dummy {
 }
 
 #[global_allocator]
-static ALLOCATOR: LockedHeap = LockedHeap::empty();
+static ALLOCATOR: LockedHeap<32> = LockedHeap::empty();
 
 pub const HEAP_START: usize = 0x_4444_4444_0000;
 pub const HEAP_SIZE: usize = 100 * 1024;
