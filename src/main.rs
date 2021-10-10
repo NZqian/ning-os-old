@@ -16,9 +16,6 @@ use ning_os::allocator::init_heap;
 use ning_os::hlt_loop;
 use ning_os::memory::BootInfoFrameAllocator;
 use ning_os::println;
-use ning_os::print;
-use x86_64::structures::paging::PageTable;
-use x86_64::structures::paging::Translate;
 pub mod memory;
 
 entry_point!(kernel_main);

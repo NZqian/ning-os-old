@@ -1,3 +1,4 @@
+use core::ops::{Deref, DerefMut};
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -37,14 +38,27 @@ struct ScreenChar {
     color_code: ColorCode,
 }
 
+impl Deref for ScreenChar {
+    type Target = ScreenChar;
+    fn deref(&self) -> &Self::Target {
+        return self
+    }
+}
+
+impl DerefMut for ScreenChar {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        return self;
+    }
+}
+
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
-use volatile::Volatile;
+use volatile::{Volatile, access::ReadWrite};
 
 #[repr(transparent)]
 struct Buffer {
-    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
+    chars: [[Volatile<ScreenChar, ReadWrite>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
 pub struct Writer {
