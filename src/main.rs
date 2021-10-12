@@ -23,6 +23,20 @@ entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     ning_os::init();
     println!("hello world");
+    x86_64::instructions::interrupts::int3();
+    fn stack_overflow() {
+        stack_overflow(); // for each recursion, the return address is pushed
+    }
+
+    // trigger a stack overflow
+    //stack_overflow();
+    /*
+    #[allow(unconditional_panic)]
+    let a = 1 / 0;
+    unsafe {
+        *(0xdeadbeef as *mut u64) = 42;
+    }
+    */
     /*
     use x86_64::VirtAddr;
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);

@@ -2,7 +2,7 @@ use x86_64::structures::idt::PageFaultErrorCode;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use pic8259::ChainedPics;
 use spin;
-use crate::println;
+use crate::{println, vga_buffer};
 use crate::print;
 use crate::gdt;
 
@@ -16,13 +16,14 @@ lazy_static! {
             idt.double_fault.set_handler_fn(double_fault_handler).set_stack_index(gdt::DOUBLE_FAULT_INDEX);
         }
         idt.page_fault.set_handler_fn(page_fault_handler);
+        idt.divide_error.set_handler_fn(divide_handler);
         idt[InterruptIndex::Timer.as_usize()].set_handler_fn(timer_interrupt_handler);
         idt[InterruptIndex::Keyboard.as_usize()].set_handler_fn(keyboard_interrupt_handler);
         idt
     };
 }
 
-pub fn  init_idt() {
+pub fn init_idt() {
     IDT.load();
 }
 
@@ -30,6 +31,12 @@ extern "x86-interrupt" fn breakpoint_handler (
     stackframe: InterruptStackFrame
 ) {
     println!("EXCEPTION: BREAKPOINT\n{:#?}", stackframe);
+}
+
+extern "x86-interrupt" fn divide_handler (
+    stackframe: InterruptStackFrame
+) {
+    println!("EXCEPTION: DIVIDE ERROR\n{:#?}", stackframe);
 }
 
 extern "x86-interrupt" fn double_fault_handler (
@@ -60,10 +67,21 @@ impl InterruptIndex {
     }
 }
 
+static mut time_cnt: u8 = 0;
+
 extern "x86-interrupt" fn timer_interrupt_handler(
     _stack_frame: InterruptStackFrame)
 {
-    //print!(".");
+    unsafe {
+        time_cnt += 1;
+        if time_cnt <= 10 {
+            vga_buffer::WRITER.lock().write(' ' as u8);
+        } else if time_cnt <= 20 {
+            vga_buffer::WRITER.lock().write('_' as u8);
+        } else {
+            time_cnt = 0;
+        }
+    }
     unsafe {
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
     };

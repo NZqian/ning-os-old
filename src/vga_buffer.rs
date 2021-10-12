@@ -79,24 +79,35 @@ impl Writer {
             }
         }
     }
+
+    //make sure default pos is valid
+    pub fn write(&mut self, byte: u8) {
+        self.buffer.chars[self.row_position][self.column_position].write(ScreenChar {
+            ascii_character: byte as u8,
+            color_code: self.color_code
+        });
+    }
+
+    fn next_pos(&mut self) {
+        self.column_position += 1;
+        if self.column_position >= BUFFER_WIDTH {
+            self.column_position = 0;
+            self.row_position += 1;
+            if self.row_position >= BUFFER_HEIGHT {
+                self.new_line()
+            }
+        }
+    }
+
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => {
-                self.new_line()
+                self.write(' ' as u8);
+                self.new_line();
             }
             byte => {
-                if self.column_position >= BUFFER_WIDTH {
-                    self.new_line()
-                }
-                let row = self.row_position;
-                let col = self.column_position;
-
-                let color_code = self.color_code;
-                self.buffer.chars[row][col].write(ScreenChar {
-                    ascii_character: byte,
-                    color_code,
-                });
-                self.column_position += 1;
+                self.write(byte as u8);
+                self.next_pos();
             }
         }
     }
@@ -107,21 +118,12 @@ impl Writer {
             self.row_position += 1;
         //reached the bottom of the screen
         } else {
-            for i in 0..BUFFER_HEIGHT - 1 {
-                for j in 0..BUFFER_WIDTH {
+            for j in 0..BUFFER_WIDTH {
+                for i in 0..BUFFER_HEIGHT - 1 {
                     self.buffer.chars[i][j].write(self.buffer.chars[i+1][j].read());
                 }
+                self.write(' ' as u8);
             }
-            self.clear_last_line();
-        }
-    }
-
-    fn clear_last_line(&mut self) {
-        for i in 0..BUFFER_WIDTH {
-            self.buffer.chars[BUFFER_HEIGHT-1][i].write(ScreenChar{
-                ascii_character: b' ',
-                color_code: self.color_code,
-            })
         }
     }
 }
@@ -162,6 +164,7 @@ macro_rules! println {
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
     use x86_64::instructions::interrupts;
+    //closure
     interrupts::without_interrupts(|| {
         WRITER.lock().write_fmt(args).unwrap();
     });
