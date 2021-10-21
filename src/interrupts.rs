@@ -17,6 +17,8 @@ lazy_static! {
         }
         idt.page_fault.set_handler_fn(page_fault_handler);
         idt.divide_error.set_handler_fn(divide_handler);
+        idt.segment_not_present.set_handler_fn(segment_not_present_handler);
+        idt.stack_segment_fault.set_handler_fn(stack_segment_fault_handler);
         idt[InterruptIndex::Timer.as_usize()].set_handler_fn(timer_interrupt_handler);
         idt[InterruptIndex::Keyboard.as_usize()].set_handler_fn(keyboard_interrupt_handler);
         idt
@@ -25,6 +27,19 @@ lazy_static! {
 
 pub fn init_idt() {
     IDT.load();
+}
+
+extern "x86-interrupt" fn stack_segment_fault_handler (
+    stackframe: InterruptStackFrame, error_code: u64
+) {
+    println!("EXCEPTION: STACK SEGMENT FAULT\n{:#?}\n{}", stackframe, error_code);
+}
+
+extern "x86-interrupt" fn segment_not_present_handler (
+    stackframe: InterruptStackFrame, error_code: u64
+) {
+    println!("EXCEPTION: SEGMENT NOT PRESENT\n{:#?}\n{}", stackframe, error_code);
+    loop{}
 }
 
 extern "x86-interrupt" fn breakpoint_handler (

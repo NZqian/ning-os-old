@@ -82,7 +82,11 @@ impl Writer {
 
     //make sure default pos is valid
     pub fn write(&mut self, byte: u8) {
-        self.buffer.chars[self.row_position][self.column_position].write(ScreenChar {
+        self.write_pos(self.row_position, self.column_position, byte)
+    }
+
+    pub fn write_pos(&mut self, row: usize, col: usize, byte: u8) {
+        self.buffer.chars[row][col].write(ScreenChar {
             ascii_character: byte as u8,
             color_code: self.color_code
         });
@@ -99,6 +103,7 @@ impl Writer {
         }
     }
 
+    //moves pos
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => {
@@ -118,11 +123,12 @@ impl Writer {
             self.row_position += 1;
         //reached the bottom of the screen
         } else {
+            self.row_position = BUFFER_HEIGHT - 1;
             for j in 0..BUFFER_WIDTH {
                 for i in 0..BUFFER_HEIGHT - 1 {
                     self.buffer.chars[i][j].write(self.buffer.chars[i+1][j].read());
                 }
-                self.write(' ' as u8);
+                self.write_pos(self.row_position, j, ' ' as u8);
             }
         }
     }

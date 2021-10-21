@@ -16,6 +16,7 @@ use ning_os::allocator::init_heap;
 use ning_os::hlt_loop;
 use ning_os::memory::BootInfoFrameAllocator;
 use ning_os::println;
+use x86_64::structures::paging::Translate;
 pub mod memory;
 
 entry_point!(kernel_main);
@@ -24,9 +25,6 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     ning_os::init();
     println!("hello world");
     x86_64::instructions::interrupts::int3();
-    fn stack_overflow() {
-        stack_overflow(); // for each recursion, the return address is pushed
-    }
 
     // trigger a stack overflow
     //stack_overflow();
@@ -62,8 +60,14 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     let page = Page::containing_address(VirtAddr::new(0));
     memory::create_example_mapping(page, &mut mapper, &mut frame_allocator);
     let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
+    //mapper.translate_addr(page.start_address()).as_
+    println!("map from {:?} to {:?}", page.start_address(), mapper.translate_addr(page.start_address()));
+    println!("mut ptr {:?}", page_ptr);
     unsafe {
+        let page_ptr_new = page_ptr.offset(0);
+        println!("mut ptr new {:?}", page_ptr_new);
         page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e);
+        page_ptr_new.write_volatile(0x_f021_f077_f065_f04e);
     }
 
     init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
